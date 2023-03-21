@@ -1,12 +1,13 @@
 const asyncHandler = require('express-async-handler')
 
 const Book = require('../models/bookModel')
+const User = require('../models/userModel')
 
 // @desc    Get books
 //  @route  GET /api/goals
 // @access  Private
 const getBook = asyncHandler(async (req, res) => {
-    const books = await Book.find()
+    const books = await Book.find({ user: req.user.id})
 
 
     res.status(200).json({message: books})
@@ -23,7 +24,8 @@ const addBook = asyncHandler(async (req, res) => {
     }
 
     const book = await Book.create({
-        text: req.body.text
+        text: req.body.text,
+        user: req.user.id
     })
     
     res.status(200).json({book})
@@ -38,6 +40,20 @@ const updateBook = asyncHandler(async (req, res) => {
     if(!book) {
         res.status(400)
         throw new Error('Book not found')
+    }
+
+    const user = await User.findById(req.user.id)
+
+    //check for user
+    if (!user) {
+        res.status(401)
+        throw new Error('User not found')
+    }
+
+    //match user and book user
+    if(book.user.toString() !== user.id){
+        res.status(401)
+        throw new Error('User not authorized')
     }
 
     const updatedBook = await Book.findByIdAndUpdate(req.params.id, req.body, {
@@ -55,6 +71,20 @@ const deleteBook = asyncHandler(async (req, res) => {
     if(!book) {
         res.status(400)
         throw new Error('Book not found')
+    }
+
+    const user = await User.findById(req.user.id)
+
+    //check for user
+    if (!user) {
+        res.status(401)
+        throw new Error('User not found')
+    }
+
+    //match user and book user
+    if(book.user.toString() !== user.id){
+        res.status(401)
+        throw new Error('User not authorized')
     }
 
     await book.deleteOne(book)
