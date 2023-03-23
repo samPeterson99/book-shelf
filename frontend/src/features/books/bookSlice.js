@@ -33,6 +33,18 @@ async (_, thunkAPI) => {
     }
 })
 
+//delete user book
+export const deleteBook = createAsyncThunk('books/delete',
+async (id, thunkAPI) => {
+    try {
+        const token = thunkAPI.getState().auth.user.token
+        return await bookService.deleteBook(id, token)
+    } catch (error) {
+        const message = (error.response && error.response.data && error.response.data.message) || error.message || error.toString()
+        return thunkAPI.rejectWithValue(message)
+    }
+})
+
 export const bookSlice = createSlice({
     name: 'books',
     initialState,
@@ -63,6 +75,19 @@ export const bookSlice = createSlice({
                 state.books = action.payload.message
             })
             .addCase(getUserBooks.rejected, (state, action) => {
+                state.isLoading = false
+                state.isError = true
+                state.message = action.payload
+            })
+            .addCase(deleteBook.pending, (state) => {
+                state.isLoading = true
+            })
+            .addCase(deleteBook.fulfilled, (state, action) => {
+                state.isLoading = false
+                state.isSuccess = true
+                state.books = state.books.filter((book) => book._id !== action.payload.id)
+            })
+            .addCase(deleteBook.rejected, (state, action) => {
                 state.isLoading = false
                 state.isError = true
                 state.message = action.payload
